@@ -81,54 +81,6 @@ python tests/test_api_keys.py
 python tests/test_entropy.py
 python tests/test_scanner.py
 ```
-
----
-
-## 📁 Project Structure
-
-```
-secret-api-key-detector/
-├── cli.py                    # CLI entry point
-├── app.py                    # Flask web UI
-├── requirements.txt
-│
-├── config/
-│   ├── patterns.yaml         # 30+ regex patterns
-│   └── settings.py           # Thresholds, file extensions, ignore rules
-│
-├── src/
-│   ├── scanner/
-│   │   ├── file_scanner.py       # Scans individual files
-│   │   ├── directory_scanner.py  # Recursive directory walking
-│   │   └── entropy_checker.py    # Shannon entropy analysis
-│   │
-│   ├── detectors/
-│   │   ├── api_key_detector.py   # Cloud + SaaS API keys
-│   │   ├── token_detector.py     # JWTs, OAuth, GitHub tokens
-│   │   └── secret_detector.py    # Passwords, DB strings, private keys
-│   │
-│   ├── utils/
-│   │   ├── file_utils.py
-│   │   ├── regex_utils.py
-│   │   └── logger.py
-│   │
-│   └── report/
-│       ├── formatter.py          # Human-readable terminal output
-│       └── json_reporter.py      # Machine-readable JSON output
-│
-├── tests/
-│   ├── test_api_keys.py
-│   ├── test_entropy.py
-│   └── test_scanner.py
-│
-├── samples/
-│   ├── insecure_sample.py        # Demo: 15+ hardcoded secrets
-│   └── insecure_config.env       # Demo: .env with real-looking secrets
-│
-└── output/
-    └── reports/                  # JSON scan reports saved here
-```
-
 ---
 
 ## 🔍 How It Works
@@ -203,4 +155,4 @@ MIT License — Free to use, modify, and distribute.
 
 ---
 
-*Built for the DevSecOps community. Shift security left.*
+*Built By Vibhasha Nagvekar with <3.*
