@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SecretScan — Secret & API Key Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ─────────────────────────────────────────────
+   TOKENS
+───────────────────────────────────────────── */
+:root{
+  --black:#080a0c;
+  --off-black:#0f1114;
+  --surface:#161a1e;
+  --surface-2:#1d2228;
+  --border:rgba(255,255,255,0.06);
+  --border-2:rgba(255,255,255,0.11);
+  --text:#f2f0ed;
+  --text-2:#8a8d91;
+  --text-3:#4a4d52;
+  --red:#d63f3f;
+  --red-2:#e85555;
+  --red-dim:rgba(214,63,63,0.12);
+  --green:#2a9d6e;
+  --amber:#c48a1a;
+  --violet:#6b58c4;
+  --r:6px;
+  --r-lg:12px;
+  --nav-h:64px;
+  --f-head:'Syne',sans-serif;
+  --f-body:'Inter',sans-serif;
+  --f-mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--black);color:var(--text);font-family:var(--f-body);font-size:15px;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::selection{background:var(--red);color:#fff}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--black)}
+::-webkit-scrollbar-thumb{background:var(--surface-2);border-radius:2px}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--f-body);cursor:pointer}
+img{max-width:100%;display:block}
+
+/* ─────────────────────────────────────────────
+   NAV
+───────────────────────────────────────────── */
+#nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:var(--nav-h);
+  display:flex;align-items:center;
+  padding:0 clamp(20px,4vw,60px);
+  transition:background .4s,backdrop-filter .4s,border-color .4s;
+  border-bottom:1px solid transparent;
+}
+#nav.scrolled{
+  background:rgba(8,10,12,0.88);
+  backdrop-filter:blur(20px);
+  border-color:var(--border);
+}
+.nav-logo{
+  font-family:var(--f-head);font-size:1.15rem;font-weight:800;
+  letter-spacing:-0.02em;color:var(--text);
+  display:flex;align-items:center;gap:10px;
+  flex-shrink:0;
+}
+.nav-logo-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--red);
+  box-shadow:0 0 10px rgba(214,63,63,0.6);
+  animation:pulse-dot 2.4s ease-in-out infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.7)}}
+.nav-links{
+  display:flex;align-items:center;gap:clamp(20px,3vw,40px);
+  margin-left:auto;margin-right:clamp(20px,3vw,40px);
+  list-style:none;
+}
+.nav-links li a{
+  font-size:.8rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-2);transition:color .2s;
+}
+.nav-links li a:hover,.nav-links li a.active{color:var(--text)}
+.nav-cta{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 20px;
+  background:var(--red);color:#fff;
+  border:none;border-radius:var(--r);
+  font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  transition:background .2s,transform .2s,box-shadow .2s;
+  white-space:nowrap;
+}
+.nav-cta:hover{background:var(--red-2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(214,63,63,0.35)}
+/* hamburger */
+.hamburger{
+  display:none;flex-direction:column;gap:5px;
+  background:none;border:none;padding:6px;margin-left:auto;
+  cursor:pointer;
+}
+.hamburger span{
+  display:block;width:22px;height:1.5px;background:var(--text);
+  transition:transform .3s,opacity .3s;transform-origin:center;
+}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+/* mobile menu */
+#mobile-menu{
+  position:fixed;inset:0;z-index:999;
+  background:var(--black);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:32px;
+  transform:translateX(100%);transition:transform .4s cubic-bezier(.77,0,.18,1);
+}
+#mobile-menu.open{transform:translateX(0)}
+#mobile-menu a{
+  font-family:var(--f-head);font-size:clamp(1.6rem,6vw,2.4rem);font-weight:700;
+  color:var(--text-2);letter-spacing:-.02em;transition:color .2s;
+}
+#mobile-menu a:hover{color:var(--text)}
+#mobile-menu .m-cta{
+  margin-top:12px;padding:12px 32px;
+  background:var(--red);color:#fff;
+  border:none;border-radius:var(--r);
+  font-family:var(--f-head);font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+}
+
+/* ─────────────────────────────────────────────
+   HERO
+───────────────────────────────────────────── */
+#hero{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 clamp(20px,5vw,80px) clamp(60px,8vh,100px);
+  overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 60% 40%,rgba(214,63,63,0.07) 0%,transparent 60%),
+             radial-gradient(ellipse 50% 40% at 20% 80%,rgba(107,88,196,0.05) 0%,transparent 55%),
+             linear-gradient(to bottom,var(--black) 0%,var(--off-black) 100%);
+}
+/* Animated grid lines */
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,0.5) 30%,rgba(0,0,0,0.5) 70%,transparent 100%);
+}
+/* Floating code lines */
+.hero-code-bg{
+  position:absolute;right:clamp(20px,8vw,140px);top:50%;transform:translateY(-50%);
+  font-family:var(--f-mono);font-size:clamp(.6rem,.9vw,.78rem);
+  line-height:1.9;
+  user-select:none;pointer-events:none;
+  opacity:0;
+  animation:fade-code 1.2s .8s forwards;
+  overflow:hidden;
+  height:280px;
+  width:clamp(260px,30vw,420px);
+  mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,1) 15%,rgba(0,0,0,1) 85%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,1) 15%,rgba(0,0,0,1) 85%,transparent 100%);
+}
+.hero-code-scroll{
+  display:flex;flex-direction:column;gap:0;
+  animation:code-scroll 18s linear infinite;
+}
+@keyframes fade-code{to{opacity:1}}
+@keyframes code-scroll{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+.code-line{
+  display:flex;align-items:baseline;gap:10px;
+  padding:3px 0;white-space:nowrap;
+}
+.code-line .sev{
+  font-size:.62rem;font-weight:700;letter-spacing:.08em;
+  min-width:64px;flex-shrink:0;
+}
+.sev-c{color:rgba(214,63,63,0.75)}
+.sev-h{color:rgba(196,138,26,0.75)}
+.sev-g{color:rgba(42,157,110,0.75)}
+.sev-i{color:rgba(74,77,82,0.8)}
+.code-line .ct{color:rgba(138,141,145,0.65);font-size:.72rem}
+.hero-eyebrow{
+  font-family:var(--f-mono);font-size:.72rem;font-weight:400;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--red);
+  margin-bottom:20px;
+  opacity:0;animation:rise .7s .2s forwards;
+}
+.hero-title{
+  font-family:var(--f-head);
+  font-size:clamp(2.8rem,7vw,6.5rem);
+  font-weight:800;line-height:1;letter-spacing:-.03em;
+  color:var(--text);
+  max-width:680px;
+  opacity:0;animation:rise .8s .35s forwards;
+}
+.hero-title span{color:var(--red)}
+.hero-sub{
+  margin-top:24px;font-size:clamp(.9rem,1.5vw,1.05rem);
+  color:var(--text-2);max-width:480px;line-height:1.7;
+  font-weight:300;
+  opacity:0;animation:rise .8s .5s forwards;
+}
+.hero-actions{
+  margin-top:36px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+  opacity:0;animation:rise .8s .65s forwards;
+}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;background:var(--red);color:#fff;
+  border:none;border-radius:var(--r);
+  font-size:.85rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.btn-primary:hover{background:var(--red-2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(214,63,63,0.35)}
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;background:transparent;color:var(--text-2);
+  border:1px solid var(--border-2);border-radius:var(--r);
+  font-size:.85rem;font-weight:500;letter-spacing:.05em;
+  transition:color .2s,border-color .2s,transform .2s;
+}
+.btn-ghost:hover{color:var(--text);border-color:rgba(255,255,255,0.25);transform:translateY(-1px)}
+.hero-stats{
+  margin-top:52px;display:flex;gap:clamp(24px,4vw,56px);
+  opacity:0;animation:rise .8s .8s forwards;
+}
+.hero-stat-num{
+  font-family:var(--f-head);font-size:clamp(1.4rem,3vw,2rem);
+  font-weight:800;color:var(--text);letter-spacing:-.02em;
+}
+.hero-stat-label{font-size:.72rem;color:var(--text-2);font-weight:400;margin-top:2px;letter-spacing:.04em}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+/* scroll indicator */
+.scroll-ind{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  opacity:.4;
+}
+.scroll-line{
+  width:1px;height:50px;background:var(--text-2);
+  transform-origin:top;
+  animation:scroll-grow 1.8s ease-in-out infinite;
+}
+@keyframes scroll-grow{0%,100%{transform:scaleY(0.2);opacity:0}50%{transform:scaleY(1);opacity:1}}
+
+/* ─────────────────────────────────────────────
+   MARQUEE STRIP
+───────────────────────────────────────────── */
+.marquee-strip{
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:16px 0;overflow:hidden;
+  background:var(--off-black);
+}
+.marquee-track{
+  display:flex;width:max-content;
+  animation:marquee 28s linear infinite;
+}
+.marquee-track:hover{animation-play-state:paused}
+.marquee-item{
+  display:flex;align-items:center;gap:12px;
+  padding:0 36px;white-space:nowrap;
+  font-family:var(--f-mono);font-size:.72rem;
+  font-weight:400;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);
+}
+.marquee-item .dot{width:4px;height:4px;border-radius:50%;background:var(--red);flex-shrink:0}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ─────────────────────────────────────────────
+   SECTIONS SHARED
+───────────────────────────────────────────── */
+section{padding:clamp(80px,12vh,140px) clamp(20px,5vw,80px)}
+.section-eyebrow{
+  font-family:var(--f-mono);font-size:.7rem;font-weight:400;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--red);
+  margin-bottom:16px;
+}
+.section-title{
+  font-family:var(--f-head);font-size:clamp(2rem,5vw,3.8rem);
+  font-weight:800;letter-spacing:-.03em;color:var(--text);
+  line-height:1.05;
+}
+.section-sub{
+  font-size:clamp(.9rem,1.4vw,1rem);color:var(--text-2);
+  line-height:1.75;font-weight:300;max-width:540px;margin-top:16px;
+}
+.divider{height:1px;background:var(--border);margin:0 clamp(20px,5vw,80px)}
+
+/* ─────────────────────────────────────────────
+   HOW IT WORKS
+───────────────────────────────────────────── */
+#how{background:var(--off-black)}
+.how-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  overflow:hidden;
+  margin-top:clamp(40px,6vw,72px);
+}
+.how-card{
+  background:var(--off-black);
+  padding:clamp(28px,4vw,48px) clamp(24px,3vw,40px);
+  position:relative;
+  transition:background .25s;
+}
+.how-card:hover{background:var(--surface)}
+.how-num{
+  font-family:var(--f-head);font-size:3.5rem;font-weight:800;
+  color:rgba(255,255,255,0.04);letter-spacing:-.04em;
+  line-height:1;margin-bottom:20px;
+  user-select:none;
+}
+.how-icon{
+  width:36px;height:36px;margin-bottom:16px;
+  position:relative;
+}
+/* CSS-only icons */
+.icon-scan{
+  border:1.5px solid var(--red);border-radius:var(--r);
+  position:relative;
+}
+.icon-scan::before{
+  content:'';position:absolute;top:50%;left:50%;
+  width:50%;height:1.5px;background:var(--red);
+  transform:translate(-50%,-50%);
+  animation:scan-line 2s ease-in-out infinite;
+}
+@keyframes scan-line{0%,100%{transform:translate(-50%,-100%)}50%{transform:translate(-50%,0%)}}
+.icon-entropy{
+  border:1.5px solid var(--violet);border-radius:50%;
+  position:relative;overflow:hidden;
+}
+.icon-entropy::before{
+  content:'';position:absolute;inset:4px;
+  border-radius:50%;
+  background:conic-gradient(var(--violet) 0deg, transparent 220deg);
+  animation:spin 3s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.icon-report{
+  border:1.5px solid var(--green);border-radius:var(--r);
+  display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;padding:6px;gap:3px;
+}
+.icon-report::before,.icon-report::after{
+  content:'';display:block;height:1.5px;border-radius:1px;
+  background:var(--green);
+}
+.icon-report::before{width:60%}
+.icon-report::after{width:80%}
+.icon-shield{
+  border:1.5px solid var(--amber);border-radius:50% 50% 40% 40%;
+  position:relative;
+}
+.icon-shield::before{
+  content:'';position:absolute;top:35%;left:50%;
+  width:40%;height:40%;
+  border-bottom:1.5px solid var(--amber);border-right:1.5px solid var(--amber);
+  transform:translate(-50%,-50%) rotate(45deg);
+}
+.how-card-title{font-family:var(--f-head);font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.01em}
+.how-card-desc{font-size:.83rem;color:var(--text-2);line-height:1.7;font-weight:300}
+
+/* ─────────────────────────────────────────────
+   SCANNER SECTION
+───────────────────────────────────────────── */
+#scanner{background:var(--black)}
+.scanner-layout{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(20px,3vw,40px);
+  margin-top:clamp(40px,6vw,64px);
+}
+/* Tab strip */
+.tab-strip{display:flex;border-bottom:1px solid var(--border)}
+.tab-btn{
+  padding:10px 18px;font-size:.72rem;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:none;border:none;color:var(--text-3);
+  border-bottom:1.5px solid transparent;margin-bottom:-1px;
+  transition:color .18s,border-color .18s;
+}
+.tab-btn:hover{color:var(--text-2)}
+.tab-btn.active{color:var(--text);border-color:var(--red)}
+.tab-pane{display:none;flex-direction:column;gap:14px;padding:18px}
+.tab-pane.active{display:flex}
+/* card */
+.scan-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  display:flex;flex-direction:column;
+  min-height:0;
+}
+.scan-card.input-card{
+  /* input card stays natural height */
+}
+.scan-card.results-card{
+  /* results card fixed so findings don't break layout */
+  height:620px;
+  overflow:hidden;
+}
+.scan-card-head{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.018);
+}
+.scan-card-title{
+  font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2)
+}
+/* toggle */
+.tgl-wrap{display:flex;align-items:center;gap:8px;cursor:pointer}
+.tgl{width:32px;height:17px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:99px;position:relative;transition:background .2s;cursor:pointer;flex-shrink:0}
+.tgl.on{background:rgba(214,63,63,.2);border-color:var(--red)}
+.tgl::after{content:'';position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--text-3);transition:transform .2s,background .2s}
+.tgl.on::after{transform:translateX(15px);background:var(--red)}
+.tgl-lbl{font-size:.68rem;color:var(--text-2);font-weight:500;letter-spacing:.04em}
+/* file name row */
+.fn-row{display:flex;align-items:center;gap:10px}
+.fn-row label{font-size:.65rem;color:var(--text-3);white-space:nowrap;letter-spacing:.05em;text-transform:uppercase;font-family:var(--f-mono)}
+.fn-row input{padding:6px 10px;width:160px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);font-family:var(--f-mono);font-size:.72rem;outline:none;transition:border-color .18s}
+.fn-row input:focus{border-color:rgba(214,63,63,.4)}
+/* code editor */
+textarea.code-ed{
+  width:100%;height:240px;resize:none;
+  padding:14px;font-family:var(--f-mono);font-size:.75rem;line-height:1.7;
+  background:var(--surface-2);border:1px solid var(--border-2);
+  border-radius:var(--r);color:var(--text);outline:none;
+  transition:border-color .18s;
+}
+textarea.code-ed::placeholder{color:var(--text-3)}
+textarea.code-ed:focus{border-color:rgba(214,63,63,.35)}
+/* upload zone */
+.upload-zone{
+  border:1px dashed var(--border-2);border-radius:var(--r-lg);
+  padding:44px 20px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;
+}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--red);background:rgba(214,63,63,.03)}
+.upload-zone .uz-icon{
+  width:40px;height:40px;margin:0 auto 14px;
+  position:relative;
+}
+/* upload icon - CSS arrow into box */
+.uz-icon::before{
+  content:'';position:absolute;left:50%;top:40%;
+  width:16px;height:10px;border-left:1.5px solid var(--text-2);
+  border-bottom:1.5px solid var(--text-2);
+  transform:translate(-50%,0) rotate(-45deg);
+  border-radius:1px;
+}
+.uz-icon::after{
+  content:'';position:absolute;left:50%;bottom:0;
+  width:24px;height:1.5px;background:var(--text-2);
+  transform:translateX(-50%);
+}
+.upload-zone .uz-label{font-size:.88rem;color:var(--text-2)}
+.upload-zone .uz-label strong{color:var(--text);font-weight:600}
+.upload-zone .uz-sub{font-size:.72rem;color:var(--text-3);margin-top:4px}
+.upload-zone .uz-name{font-family:var(--f-mono);font-size:.7rem;color:var(--green);margin-top:10px}
+#file-input{display:none}
+/* scan button */
+.scan-btn-full{
+  width:100%;padding:11px;background:var(--red);color:#fff;
+  border:none;border-radius:var(--r);
+  font-family:var(--f-body);font-size:.8rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .2s,transform .15s;
+  cursor:pointer;
+}
+.scan-btn-full:hover{background:var(--red-2);transform:translateY(-1px)}
+.scan-btn-full:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* spinner */
+.spinner{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);
+  border-top-color:#fff;
+  animation:spin .7s linear infinite;
+  display:none;
+}
+.scan-btn-full.loading .spinner{display:block}
+.scan-btn-full.loading .btn-text{display:none}
+
+/* progress */
+.progress-bar{height:2px;background:var(--surface-2);overflow:hidden;border-radius:1px}
+.progress-inner{height:100%;background:var(--red);width:0;transition:width .4s}
+.progress-inner.running{width:55%!important;animation:prun 1.2s ease-in-out infinite}
+@keyframes prun{0%{transform:translateX(-80%)}100%{transform:translateX(240%)}}
+
+/* stats */
+.stats-row{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:8px;padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.stat-box{
+  text-align:center;padding:8px 4px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:rgba(255,255,255,.012);transition:all .3s;
+}
+.stat-box.lit-c{border-color:rgba(214,63,63,.4);background:rgba(214,63,63,.06)}
+.stat-box.lit-h{border-color:rgba(196,138,26,.4);background:rgba(196,138,26,.06)}
+.stat-box.lit-m{border-color:rgba(42,157,110,.4);background:rgba(42,157,110,.06)}
+.stat-box.lit-l{border-color:rgba(107,88,196,.4);background:rgba(107,88,196,.06)}
+.stat-num{font-family:var(--f-head);font-size:1.4rem;font-weight:800;color:var(--text-3);line-height:1}
+.stat-box.lit-c .stat-num{color:var(--red)}
+.stat-box.lit-h .stat-num{color:var(--amber)}
+.stat-box.lit-m .stat-num{color:var(--green)}
+.stat-box.lit-l .stat-num{color:var(--violet)}
+.stat-lbl{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-top:2px}
+/* findings */
+.findings{
+  padding:12px;
+  display:flex;flex-direction:column;gap:6px;
+  overflow-y:auto;
+  flex:1;
+  min-height:0;
+}
+.findings::-webkit-scrollbar{width:4px}
+.findings::-webkit-scrollbar-track{background:transparent}
+.findings::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:2px}
+.finding{
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  border-radius:var(--r);
+  flex-shrink:0;
+  transition:border-color .15s,background .15s;
+}
+.finding:hover{border-color:var(--border-2);background:#212830}
+.finding-top{
+  padding:8px 12px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.finding-top .finding-desc{
+  font-size:.8rem;font-weight:500;flex:1;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.finding-top .finding-ln{font-family:var(--f-mono);font-size:.66rem;color:var(--text-3);flex-shrink:0}
+.finding-meta{padding:7px 12px;display:flex;flex-direction:column;gap:3px}
+.meta-row{display:flex;gap:8px;font-size:.7rem}
+.mk{color:var(--text-3);font-family:var(--f-mono);min-width:52px;flex-shrink:0}
+.mv{font-family:var(--f-mono);color:var(--text-2);word-break:break-all;line-height:1.4}
+.mv.cx{color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+.sev-tag{
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;flex-shrink:0;
+}
+.sC{background:rgba(214,63,63,.14);color:#e85555;border:1px solid rgba(214,63,63,.28)}
+.sH{background:rgba(196,138,26,.14);color:#d4900a;border:1px solid rgba(196,138,26,.28)}
+.sM{background:rgba(42,157,110,.14);color:#2a9d6e;border:1px solid rgba(42,157,110,.28)}
+.sL{background:rgba(107,88,196,.14);color:#8070d4;border:1px solid rgba(107,88,196,.28)}
+/* empty/clean */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:56px 20px;color:var(--text-3);text-align:center}
+.empty-icon{width:40px;height:40px;margin:0 auto;position:relative}
+.empty-icon::before{content:'';position:absolute;inset:0;border:1.5px solid var(--text-3);border-radius:50%}
+.empty-icon::after{content:'';position:absolute;inset:8px;border:1.5px solid var(--text-3);border-radius:50%}
+.empty-text{font-size:.8rem;letter-spacing:.04em}
+.clean-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:56px 20px;text-align:center}
+.clean-icon{
+  width:40px;height:40px;margin:0 auto;
+  border:1.5px solid var(--green);border-radius:50%;
+  position:relative;
+}
+.clean-icon::before{
+  content:'';position:absolute;left:28%;top:45%;
+  width:20%;height:35%;
+  border-left:1.5px solid var(--green);border-bottom:1.5px solid var(--green);
+  transform:rotate(-45deg);
+}
+.clean-title{font-family:var(--f-head);font-size:.95rem;font-weight:700;color:var(--green)}
+.clean-sub{font-size:.72rem;color:var(--text-3)}
+/* log bar */
+.log-bar{padding:8px 18px;border-top:1px solid var(--border);font-family:var(--f-mono);font-size:.66rem;color:var(--text-3);display:flex;align-items:center;gap:8px}
+.log-dot{width:5px;height:5px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+.log-bar.active .log-dot{background:var(--red);animation:pulse-dot .6s ease-in-out infinite}
+/* result meta */
+.result-meta-bar{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.result-meta-text{font-family:var(--f-mono);font-size:.66rem;color:var(--text-3)}
+.btn-clear{background:none;border:1px solid var(--border-2);border-radius:4px;color:var(--text-3);font-size:.66rem;padding:3px 9px;transition:all .15s;font-family:var(--f-mono)}
+.btn-clear:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* ─────────────────────────────────────────────
+   CICD SECTION
+───────────────────────────────────────────── */
+#cicd{background:var(--off-black)}
+.cicd-layout{
+  display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px);
+  margin-top:clamp(40px,6vw,64px);
+}
+.steps-list{display:flex;flex-direction:column;gap:0}
+.step-item{
+  display:flex;gap:16px;padding:22px 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.step-item:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--red);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-mono);font-size:.72rem;font-weight:500;color:var(--red);
+  flex-shrink:0;background:var(--red-dim);
+}
+.step-line{flex:1;width:1px;background:var(--border);margin-top:6px}
+.step-body{padding-top:3px}
+.step-title{font-family:var(--f-head);font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:5px}
+.step-desc{font-size:.78rem;color:var(--text-2);line-height:1.6}
+.step-desc code{font-family:var(--f-mono);font-size:.75em;background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--text-2)}
+/* platform tabs */
+.ptabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.ptab{font-size:.7rem;font-weight:600;padding:5px 12px;border-radius:var(--r);cursor:pointer;border:1px solid var(--border-2);background:transparent;color:var(--text-3);transition:all .17s;letter-spacing:.04em;text-transform:uppercase}
+.ptab:hover{background:var(--surface-2);color:var(--text-2)}
+.ptab.active{background:var(--red);color:#fff;border-color:var(--red)}
+pre.wf{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:18px 20px;
+  font-family:var(--f-mono);font-size:.72rem;color:#9db8c8;
+  overflow-x:auto;line-height:1.7;white-space:pre;
+  max-height:340px;overflow-y:auto;
+}
+pre.wf::-webkit-scrollbar{width:3px;height:3px}
+pre.wf::-webkit-scrollbar-thumb{background:var(--surface-2)}
+pre.wf .c{color:#3d5c4a}pre.wf .k{color:#7aab8a}pre.wf .v{color:#c4a55c}pre.wf .kw{color:#8878c4}
+/* best practice cards */
+.bp-grid{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.bp-card{
+  padding:14px 16px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);font-size:.78rem;color:var(--text-2);line-height:1.6;
+  border-left:3px solid var(--red);
+  transition:background .2s;
+}
+.bp-card:hover{background:var(--surface-2)}
+.bp-card strong{color:var(--text);font-weight:600;display:block;margin-bottom:3px}
+/* config tester */
+.config-tester{
+  margin-top:clamp(40px,5vw,60px);
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:clamp(24px,4vw,40px);
+}
+.config-tester h3{font-family:var(--f-head);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:8px}
+.config-tester p{font-size:.8rem;color:var(--text-2);margin-bottom:16px;line-height:1.6}
+.config-tester-grid{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.config-result{
+  font-family:var(--f-mono);font-size:.75rem;
+  padding:10px 14px;border-radius:var(--r);
+  background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-3);margin-top:12px;min-height:38px;
+  display:none;
+}
+.config-result.visible{display:block}
+.config-result.found{color:var(--red);border-color:rgba(214,63,63,.3)}
+.config-result.clean{color:var(--green);border-color:rgba(42,157,110,.3)}
+
+/* ─────────────────────────────────────────────
+   CHATBOT SECTION
+───────────────────────────────────────────── */
+#chatbot{background:var(--black)}
+.chat-layout{
+  display:grid;grid-template-columns:1fr 300px;gap:clamp(20px,3vw,32px);
+  margin-top:clamp(40px,6vw,64px);
+  max-width:100%;
+}
+.chat-window{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;
+  display:flex;flex-direction:column;height:520px;
+}
+.chat-topbar{
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.02);
+  flex-shrink:0;
+}
+.chat-av{
+  width:34px;height:34px;border-radius:var(--r);
+  background:var(--red);position:relative;overflow:hidden;
+}
+/* animated bot face */
+.chat-av::before{
+  content:'';position:absolute;top:6px;left:7px;right:7px;
+  height:2px;background:rgba(255,255,255,.6);border-radius:1px;
+  box-shadow:0 6px 0 rgba(255,255,255,.6),0 12px 0 rgba(255,255,255,.6);
+}
+.chat-bot-name{font-family:var(--f-head);font-size:.93rem;font-weight:700}
+.chat-bot-sub{font-size:.68rem;color:var(--text-3)}
+.chat-model{margin-left:auto;font-family:var(--f-mono);font-size:.62rem;padding:2px 8px;border-radius:3px;border:1px solid var(--border-2);color:var(--text-3)}
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--surface-2)}
+.msg{display:flex;gap:8px;max-width:85%;animation:pop .22s ease both}
+.msg.u{flex-direction:row-reverse;align-self:flex-end}
+.msg.b{align-self:flex-start}
+.msg-av{width:26px;height:26px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.msg.b .msg-av{background:var(--red)}
+.msg.b .msg-av::before{content:'';width:10px;height:7px;border:1px solid rgba(255,255,255,.6);border-radius:2px;border-bottom:none}
+.msg.u .msg-av{background:var(--surface-2);border:1px solid var(--border-2)}
+.msg.u .msg-av::before{content:'';width:12px;height:12px;border:1px solid var(--text-3);border-radius:50%}
+.msg-bubble{padding:9px 13px;border-radius:12px;font-size:.8rem;line-height:1.65}
+.msg.b .msg-bubble{background:var(--surface-2);border:1px solid var(--border);border-top-left-radius:3px;color:var(--text)}
+.msg.u .msg-bubble{background:var(--red);color:#fff;border-top-right-radius:3px}
+.msg-bubble strong{font-weight:600}
+.msg-bubble code{font-family:var(--f-mono);font-size:.78em;background:rgba(255,255,255,.07);padding:1px 4px;border-radius:3px}
+.msg-bubble pre{font-family:var(--f-mono);font-size:.73em;background:rgba(0,0,0,.3);padding:8px 10px;border-radius:6px;margin:6px 0;overflow-x:auto;white-space:pre-wrap}
+/* typing */
+.typing-dots{display:flex;gap:4px;padding:4px 2px}
+.typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--text-3);animation:tdot 1.2s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
+/* chat input */
+.chat-input-area{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{
+  flex:1;padding:9px 12px;background:var(--surface-2);border:1px solid var(--border-2);
+  border-radius:var(--r);color:var(--text);font-size:.8rem;line-height:1.5;
+  resize:none;height:40px;max-height:100px;overflow-y:auto;outline:none;
+  transition:border-color .18s;
+}
+.chat-input:focus{border-color:rgba(214,63,63,.4)}
+.chat-send{
+  width:40px;height:40px;border-radius:var(--r);
+  background:var(--red);border:none;color:#fff;
+  font-size:.95rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .18s,transform .15s;
+  /* CSS send arrow */
+  position:relative;
+}
+.chat-send::before{
+  content:'';position:absolute;
+  width:10px;height:10px;
+  border-top:2px solid #fff;border-right:2px solid #fff;
+  transform:rotate(45deg) translate(-1px,1px);
+}
+.chat-send:hover{background:var(--red-2);transform:translateY(-1px)}
+.chat-send:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* quick prompts */
+.quick-prompts{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.qp{
+  font-size:.68rem;padding:4px 10px;
+  background:var(--surface-2);border:1px solid var(--border-2);border-radius:99px;
+  color:var(--text-2);cursor:pointer;transition:all .14s;
+  white-space:nowrap;
+}
+.qp:hover{border-color:var(--red);color:var(--text)}
+/* chat sidebar */
+.chat-sidebar{display:flex;flex-direction:column;gap:14px}
+.chat-sidebar-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px}
+.cs-label{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-2);margin-bottom:10px}
+.ak-wrap{position:relative}
+.ak-inp{width:100%;padding:8px 36px 8px 10px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:var(--r);color:var(--text);font-family:var(--f-mono);font-size:.7rem;outline:none;transition:border-color .18s}
+.ak-inp:focus{border-color:rgba(214,63,63,.4)}
+.ak-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;width:20px;height:20px}
+/* css eye icon */
+.ak-eye::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:10px;height:7px;border:1px solid var(--text-3);border-radius:50%;transition:border-color .2s}
+.ak-eye:hover::before{border-color:var(--text-2)}
+.ak-status{font-size:.68rem;color:var(--text-3);padding:4px 8px;border-radius:var(--r);background:var(--surface-2);text-align:center;margin-top:8px}
+.ak-status.ok{color:var(--green);background:rgba(42,157,110,.08)}
+.ak-note{font-size:.7rem;color:var(--text-3);line-height:1.55;margin-top:8px}
+.faq-list{display:flex;flex-direction:column;gap:3px}
+.faq-i{
+  padding:8px 10px;border-radius:var(--r);background:var(--surface-2);
+  border:1px solid var(--border);cursor:pointer;font-size:.72rem;
+  color:var(--text-2);transition:all .14s;line-height:1.4;
+}
+.faq-i:hover{border-color:rgba(214,63,63,.4);color:var(--text);background:rgba(214,63,63,.04)}
+
+/* ─────────────────────────────────────────────
+   ABOUT / PATTERNS SECTION
+───────────────────────────────────────────── */
+#about{background:var(--off-black)}
+.about-hero-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:clamp(40px,6vw,80px);align-items:center;
+  margin-bottom:clamp(60px,8vw,100px);
+}
+.about-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:clamp(40px,5vw,64px)}
+.ac{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:clamp(20px,3vw,32px);
+  transition:border-color .2s,background .2s;
+}
+.ac:hover{border-color:var(--border-2);background:var(--surface-2)}
+.ac-icon-wrap{
+  width:40px;height:40px;border-radius:var(--r);
+  border:1.5px solid var(--border-2);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;position:relative;
+}
+/* entropy icon */
+.aci-entropy::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1.5px solid var(--violet);border-right-color:transparent;animation:spin 2s linear infinite}
+/* modular icon */
+.aci-modular::before{content:'';position:absolute;width:12px;height:12px;background:var(--green);border-radius:2px;box-shadow:-8px 0 0 -2px var(--green),8px 0 0 -2px var(--green)}
+/* shield icon */
+.aci-shield::before{content:'';position:absolute;inset:5px;border-radius:3px 3px 50% 50%;border:1.5px solid var(--amber)}
+.ac-title{font-family:var(--f-head);font-size:.95rem;font-weight:700;margin-bottom:7px}
+.ac-desc{font-size:.78rem;color:var(--text-2);line-height:1.65}
+/* patterns table */
+.patterns-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-top:clamp(40px,5vw,64px)}
+.patterns-card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.pt-table{width:100%;border-collapse:collapse;font-size:.75rem}
+.pt-table th{text-align:left;padding:10px 20px;color:var(--text-3);font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.pt-table td{padding:9px 20px;border-bottom:1px solid var(--border);color:var(--text-2)}
+.pt-table tr:last-child td{border-bottom:none}
+.pt-table tr:hover td{background:rgba(255,255,255,.015)}
+.pt-table td:nth-child(2){font-family:var(--f-mono);font-size:.7rem}
+.pt-sev{font-family:var(--f-mono);font-size:.6rem;font-weight:700}
+.ptC{color:var(--red)}.ptH{color:var(--amber)}.ptM{color:var(--green)}.ptL{color:var(--violet)}
+
+/* ─────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────── */
+footer{
+  background:var(--off-black);border-top:1px solid var(--border);
+  padding:clamp(40px,6vw,64px) clamp(20px,5vw,80px) clamp(24px,4vw,40px);
+}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:clamp(24px,4vw,60px);padding-bottom:clamp(32px,4vw,48px);border-bottom:1px solid var(--border)}
+.footer-brand .fb-name{font-family:var(--f-head);font-size:1rem;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.footer-brand p{font-size:.78rem;color:var(--text-2);line-height:1.65;max-width:260px}
+.footer-col h4{font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+.footer-col ul li a{font-size:.78rem;color:var(--text-3);transition:color .18s}
+.footer-col ul li a:hover{color:var(--text)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:clamp(20px,3vw,28px)}
+.footer-copy{font-size:.72rem;color:var(--text-3);font-family:var(--f-mono)}
+.footer-tech{display:flex;gap:14px}
+.ft-chip{font-family:var(--f-mono);font-size:.65rem;padding:2px 8px;border:1px solid var(--border);border-radius:3px;color:var(--text-3)}
+
+/* ─────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  background:var(--surface-2);border:1px solid var(--border-2);
+  border-radius:var(--r);padding:10px 16px;font-size:.8rem;color:var(--text);
+  backdrop-filter:blur(16px);
+  transform:translateY(70px);opacity:0;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────── */
+@media(max-width:900px){
+  .nav-links,.nav-cta{display:none}
+  .hamburger{display:flex}
+  .scanner-layout,.cicd-layout,.chat-layout,.about-hero-grid{grid-template-columns:1fr}
+  .about-cards{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr}
+  .hero-code-bg{display:none}
+  .config-tester-grid{grid-template-columns:1fr}
+  .chat-sidebar{display:none}
+  .hero-stats{gap:28px}
+  .how-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:540px){
+  .about-cards{grid-template-columns:1fr}
+  .how-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(5,1fr)}
+  .footer-bottom{flex-direction:column;gap:10px;text-align:center}
+  .hero-title{font-size:2.4rem}
+  .hero-stats{flex-wrap:wrap;gap:20px}
+  .ptabs{gap:3px}
+  .pt-table th:nth-child(2),.pt-table td:nth-child(2){display:none}
+}
+/* ─────────────────────────────────────────────
+   STICKY NOTE — FIXED FLOATING OVERLAY
+───────────────────────────────────────────── */
+
+/* The floating trigger button — fixed bottom-right */
+#sticky-fab{
+  position:fixed;
+  bottom:90px;right:28px;
+  z-index:900;
+  display:none;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+}
+#sticky-fab.visible{display:flex}
+
+/* Animated bug / alert icon button */
+.sticky-fab-btn{
+  width:52px;height:52px;
+  border-radius:50%;
+  border:none;cursor:pointer;
+  position:relative;
+  background:var(--sn-bg,#f5e642);
+  box-shadow:0 4px 16px rgba(0,0,0,0.4),0 0 0 3px rgba(0,0,0,0.15);
+  transition:transform .2s,box-shadow .2s;
+  overflow:visible;
+}
+.sticky-fab-btn:hover{transform:scale(1.1);box-shadow:0 6px 24px rgba(0,0,0,0.5)}
+
+/* Pulsing ring animation */
+.sticky-fab-btn::before{
+  content:'';
+  position:absolute;inset:-6px;
+  border-radius:50%;
+  border:2px solid var(--sn-bg,#f5e642);
+  opacity:0;
+  animation:fab-pulse 2.2s ease-out infinite;
+}
+@keyframes fab-pulse{
+  0%{transform:scale(0.85);opacity:0.7}
+  70%{transform:scale(1.35);opacity:0}
+  100%{opacity:0}
+}
+
+/* Shield icon inside fab */
+.fab-icon{
+  width:24px;height:24px;
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-55%);
+}
+.fab-icon::before{
+  content:'';position:absolute;inset:0;
+  border:2.5px solid #1a1a00;
+  border-radius:4px 4px 50% 50%;
+}
+.fab-icon::after{
+  content:'!';
+  position:absolute;left:50%;top:42%;
+  transform:translate(-50%,-50%);
+  font-family:var(--f-head);font-size:.7rem;font-weight:900;
+  color:#1a1a00;line-height:1;
+}
+
+/* Count badge */
+.fab-badge{
+  position:absolute;top:-4px;right:-4px;
+  width:18px;height:18px;border-radius:50%;
+  background:#d63f3f;
+  font-family:var(--f-head);font-size:.58rem;font-weight:800;
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--black);
+}
+
+/* Color theme toggle pills */
+.sticky-theme-row{
+  display:flex;gap:6px;
+}
+.sn-theme-dot{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid rgba(0,0,0,0.2);
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+}
+.sn-theme-dot:hover{transform:scale(1.15);box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.sn-theme-dot.active{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(0,0,0,0.3)}
+.sn-theme-dot[data-theme="yellow"]{background:#f5e642}
+.sn-theme-dot[data-theme="blue"]{background:#a8d8f0}
+.sn-theme-dot[data-theme="green"]{background:#a8e6c0}
+.sn-theme-dot[data-theme="pink"]{background:#f0a8c8}
+.sn-theme-dot[data-theme="orange"]{background:#f0c878}
+
+/* The floating panel itself */
+#sticky-panel{
+  position:fixed;
+  bottom:158px;right:28px;
+  z-index:901;
+  width:clamp(300px,35vw,440px);
+  max-height:70vh;
+  border-radius:var(--r-lg) var(--r-lg) var(--r) var(--r);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6),0 4px 16px rgba(0,0,0,0.4);
+  transform:scale(0.85) translateY(20px);
+  opacity:0;
+  pointer-events:none;
+  transition:transform .3s cubic-bezier(.34,1.4,.64,1),opacity .25s;
+  transform-origin:bottom right;
+}
+#sticky-panel.open{
+  transform:scale(1) translateY(0);
+  opacity:1;
+  pointer-events:all;
+}
+
+/* Panel color themes */
+#sticky-panel[data-theme="yellow"]{ --sn-bg:#f5e642; --sn-text:#1a1a00; --sn-sub:#3a3a00; --sn-line:rgba(0,0,0,0.06); --sn-dashed:rgba(0,0,0,0.15); }
+#sticky-panel[data-theme="blue"]  { --sn-bg:#a8d8f0; --sn-text:#0a2a3a; --sn-sub:#1a3a4a; --sn-line:rgba(0,0,0,0.05); --sn-dashed:rgba(0,0,0,0.12); }
+#sticky-panel[data-theme="green"] { --sn-bg:#a8e6c0; --sn-text:#0a2a1a; --sn-sub:#1a3a2a; --sn-line:rgba(0,0,0,0.05); --sn-dashed:rgba(0,0,0,0.12); }
+#sticky-panel[data-theme="pink"]  { --sn-bg:#f0a8c8; --sn-text:#2a001a; --sn-sub:#3a1a2a; --sn-line:rgba(0,0,0,0.05); --sn-dashed:rgba(0,0,0,0.12); }
+#sticky-panel[data-theme="orange"]{ --sn-bg:#f0c878; --sn-text:#1a0a00; --sn-sub:#2a1a00; --sn-line:rgba(0,0,0,0.06); --sn-dashed:rgba(0,0,0,0.15); }
+
+.sn-header{
+  background:var(--sn-bg);
+  padding:12px 14px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  border-bottom:2px solid rgba(0,0,0,0.08);
+  position:relative;
+}
+/* tape strip top decoration */
+.sn-header::before{
+  content:'';position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+  width:50px;height:10px;
+  background:rgba(255,255,255,0.5);
+  border-radius:2px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+}
+.sn-header-title{
+  font-family:var(--f-head);font-size:.72rem;font-weight:800;
+  color:var(--sn-text);letter-spacing:.1em;text-transform:uppercase;
+}
+.sn-close{
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,0.12);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+  font-size:.75rem;color:var(--sn-text);
+  font-weight:700;
+}
+.sn-close:hover{background:rgba(0,0,0,0.22)}
+
+.sn-body{
+  background:var(--sn-bg);
+  flex:1;overflow-y:auto;
+  padding:14px;
+  /* ruled lines */
+  background-image:repeating-linear-gradient(
+    to bottom,
+    var(--sn-bg) 0px,var(--sn-bg) 23px,
+    var(--sn-line) 23px,var(--sn-line) 24px
+  );
+}
+.sn-body::-webkit-scrollbar{width:3px}
+.sn-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:2px}
+
+.sn-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--sn-dashed);
+}
+.sn-item:last-child{border-bottom:none}
+
+/* Danger circle — drawn with CSS */
+.sn-circle{
+  width:30px;height:30px;border-radius:50%;
+  flex-shrink:0;
+  position:relative;
+  margin-top:2px;
+}
+.sn-circle.crit{
+  border:2.5px solid #d63f3f;
+  background:rgba(214,63,63,.1);
+  animation:circle-wobble 3s ease-in-out infinite;
+}
+.sn-circle.high{
+  border:2.5px solid #c48a1a;
+  background:rgba(196,138,26,.1);
+}
+@keyframes circle-wobble{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+}
+/* inner ring for CRITICAL */
+.sn-circle.crit::before{
+  content:'';position:absolute;inset:4px;border-radius:50%;
+  border:1px solid rgba(214,63,63,.4);
+}
+.sn-circle-label{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-head);font-size:.62rem;font-weight:900;
+  color:#d63f3f;
+}
+.sn-circle.high .sn-circle-label{color:#c48a1a}
+
+.sn-text{flex:1}
+.sn-name{
+  font-family:var(--f-head);font-size:.75rem;font-weight:700;
+  color:var(--sn-text);line-height:1.25;
+}
+.sn-detail{
+  font-family:var(--f-mono);font-size:.65rem;
+  color:var(--sn-sub);margin-top:2px;
+  word-break:break-all;line-height:1.35;opacity:.8;
+}
+.sn-action{
+  font-size:.63rem;font-weight:700;letter-spacing:.04em;
+  margin-top:4px;
+  color:#d63f3f;
+}
+.sn-circle.high~.sn-text .sn-action{color:#a06010}
+
+.sn-footer{
+  background:var(--sn-bg);
+  padding:10px 14px;
+  border-top:1px dashed var(--sn-dashed);
+  font-family:var(--f-mono);font-size:.63rem;
+  color:var(--sn-sub);opacity:.7;
+  flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ NAV ═══════════════════════════ -->
+<nav id="nav">
+  <div class="nav-logo">
+    SecretScan
+  </div>
+  <ul class="nav-links">
+    <li><a href="#hero">Home</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#scanner">Scanner</a></li>
+    <li><a href="#cicd">CI/CD</a></li>
+    <li><a href="#chatbot">SecretBot</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
+  <button class="nav-cta" onclick="scrollTo('#scanner')">Run Scan</button>
+  <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile menu -->
+<div id="mobile-menu">
+  <a href="#hero" onclick="closeMenu()">Home</a>
+  <a href="#how" onclick="closeMenu()">How It Works</a>
+  <a href="#scanner" onclick="closeMenu()">Scanner</a>
+  <a href="#cicd" onclick="closeMenu()">CI/CD</a>
+  <a href="#chatbot" onclick="closeMenu()">SecretBot</a>
+  <a href="#about" onclick="closeMenu()">About</a>
+  <button class="m-cta" onclick="scrollTo('#scanner');closeMenu()">Run Scan</button>
+</div>
+
+<!-- ═══════════════ HERO ══════════════════════════ -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-code-bg" aria-hidden="true">
+    <div class="hero-code-scroll" id="hero-code-scroll"></div>
+  </div>
+
+  <div class="hero-eyebrow">DevSecOps Toolkit — v1.0</div>
+  <h1 class="hero-title">
+    Detect<br>Exposed<br><span>Secrets.</span>
+  </h1>
+  <p class="hero-sub">
+    Pattern matching, Shannon entropy analysis, and 30+ detection rules for API keys, tokens, passwords, and private keys — before they reach production.
+  </p>
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="scrollTo('#scanner')">Run a Scan</button>
+  </div>
+  <div class="hero-stats">
+    <div>
+      <div class="hero-stat-num">30+</div>
+      <div class="hero-stat-label">Secret Patterns</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">4</div>
+      <div class="hero-stat-label">Severity Levels</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">CI/CD</div>
+      <div class="hero-stat-label">Pipeline Ready</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">0</div>
+      <div class="hero-stat-label">Dependencies Needed</div>
+    </div>
+  </div>
+  <div class="scroll-ind" aria-hidden="true">
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ MARQUEE ══════════════════════ -->
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <!-- doubled for seamless loop -->
+    <div class="marquee-item"><div class="dot"></div>AWS Access Keys</div>
+    <div class="marquee-item"><div class="dot"></div>GitHub Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Stripe API Keys</div>
+    <div class="marquee-item"><div class="dot"></div>OpenAI Keys</div>
+    <div class="marquee-item"><div class="dot"></div>Slack Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>JWT Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Database URIs</div>
+    <div class="marquee-item"><div class="dot"></div>Private Keys</div>
+    <div class="marquee-item"><div class="dot"></div>SendGrid Keys</div>
+    <div class="marquee-item"><div class="dot"></div>Shannon Entropy</div>
+    <div class="marquee-item"><div class="dot"></div>Twilio Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Discord Bots</div>
+    <div class="marquee-item"><div class="dot"></div>Azure Storage</div>
+    <div class="marquee-item"><div class="dot"></div>GitLab PATs</div>
+    <div class="marquee-item"><div class="dot"></div>AWS Access Keys</div>
+    <div class="marquee-item"><div class="dot"></div>GitHub Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Stripe API Keys</div>
+    <div class="marquee-item"><div class="dot"></div>OpenAI Keys</div>
+    <div class="marquee-item"><div class="dot"></div>Slack Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>JWT Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Database URIs</div>
+    <div class="marquee-item"><div class="dot"></div>Private Keys</div>
+    <div class="marquee-item"><div class="dot"></div>SendGrid Keys</div>
+    <div class="marquee-item"><div class="dot"></div>Shannon Entropy</div>
+    <div class="marquee-item"><div class="dot"></div>Twilio Tokens</div>
+    <div class="marquee-item"><div class="dot"></div>Discord Bots</div>
+    <div class="marquee-item"><div class="dot"></div>Azure Storage</div>
+    <div class="marquee-item"><div class="dot"></div>GitLab PATs</div>
+  </div>
+</div>
+
+<!-- ═══════════════ HOW IT WORKS ═════════════════ -->
+<section id="how">
+  <div class="section-eyebrow">Methodology</div>
+  <h2 class="section-title">How It Works</h2>
+  <p class="section-sub">Two complementary detection engines that cover known patterns and unknown secrets alike.</p>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <div class="how-icon icon-scan"></div>
+      <div class="how-card-title">Pattern Detection</div>
+      <div class="how-card-desc">Curated regex patterns for 30+ secret types across AWS, GitHub, Stripe, OpenAI, Slack, Google, Azure, Twilio, and more. Each detector follows the Single Responsibility Principle — extensible and auditable.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <div class="how-icon icon-entropy"></div>
+      <div class="how-card-title">Shannon Entropy Analysis</div>
+      <div class="how-card-desc">Computes H = −Σ p(x) log₂(p(x)) for every string in the file. Strings above threshold 4.5 in base64 or hex character sets are flagged — catching secrets that don't match any known pattern.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <div class="how-icon icon-report"></div>
+      <div class="how-card-title">Severity Classification</div>
+      <div class="how-card-desc">Every finding is classified CRITICAL, HIGH, MEDIUM, or LOW based on potential blast radius. CRITICAL findings — AWS keys, database credentials, private keys — fail CI pipelines with exit code 1.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">04</div>
+      <div class="how-icon icon-shield"></div>
+      <div class="how-card-title">Safe Reporting</div>
+      <div class="how-card-desc">Matched secrets are masked in output (sk_l****p7dc) so reports can be logged and shared safely. JSON output integrates with SIEM tools, dashboards, and Slack notifications.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ SCANNER ══════════════════════ -->
+<section id="scanner">
+  <div class="section-eyebrow">Interactive Tool</div>
+  <h2 class="section-title">Run a Scan</h2>
+  <p class="section-sub">Paste code or upload a file. Results appear in real time.</p>
+
+  <div class="scanner-layout">
+    <!-- Input -->
+    <div class="scan-card">
+      <div class="scan-card-head">
+        <span class="scan-card-title">Input Source</span>
+        <div class="tgl-wrap" onclick="toggleEnt()">
+          <div class="tgl on" id="ent-tgl"></div>
+          <span class="tgl-lbl">Entropy Analysis</span>
+        </div>
+      </div>
+      <div class="tab-strip">
+        <button class="tab-btn active" onclick="stab('code')">Code Snippet</button>
+        <button class="tab-btn" onclick="stab('file')">Upload File</button>
+      </div>
+      <div class="tab-pane active" id="tp-code">
+        <div class="fn-row">
+          <label>Filename</label>
+          <input type="text" id="fn-in" value="app.py"/>
+        </div>
+        <textarea class="code-ed" id="code-in"
+          placeholder="# Paste code here...&#10;&#10;AWS_KEY = 'AKIAIOSFODNN7EXAMPLE'&#10;DB_URL  = 'postgres://admin:pass@prod.db:5432/mydb'&#10;TOKEN   = 'ghp_16C7e42F292c6912E7710c838347Ae178B4a'"></textarea>
+        <button class="scan-btn-full" id="scan-btn" onclick="doScan()">
+          <div class="spinner"></div>
+          <span class="btn-text">Run Scan</span>
+        </button>
+      </div>
+      <div class="tab-pane" id="tp-file">
+        <div class="upload-zone" id="uz"
+             onclick="document.getElementById('fi').click()"
+             ondragover="dov(event)" ondragleave="dlv()" ondrop="ddr(event)">
+          <div class="uz-icon"></div>
+          <div class="uz-label"><strong>Click to upload</strong> or drag and drop</div>
+          <div class="uz-sub">.py .js .env .yaml .json .zip — max 50 MB</div>
+          <div class="uz-name" id="un"></div>
+        </div>
+        <input type="file" id="fi" onchange="fsel(event)" accept=".py,.js,.ts,.java,.go,.rb,.env,.yaml,.yml,.json,.sh,.zip"/>
+        <button class="scan-btn-full" onclick="doFileScan()">Run File Scan</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="scan-card results-card">
+      <div class="scan-card-head">
+        <span class="scan-card-title">Results</span>
+      </div>
+      <div class="progress-bar"><div class="progress-inner" id="pi"></div></div>
+      <div class="result-meta-bar">
+        <span class="result-meta-text" id="rm">Awaiting scan</span>
+        <button class="btn-clear" onclick="clrRes()">Clear</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box" id="sc-c"><div class="stat-num" id="sn-c">—</div><div class="stat-lbl">Critical</div></div>
+        <div class="stat-box" id="sc-h"><div class="stat-num" id="sn-h">—</div><div class="stat-lbl">High</div></div>
+        <div class="stat-box" id="sc-m"><div class="stat-num" id="sn-m">—</div><div class="stat-lbl">Medium</div></div>
+        <div class="stat-box" id="sc-l"><div class="stat-num" id="sn-l">—</div><div class="stat-lbl">Low</div></div>
+        <div class="stat-box" id="sc-i"><div class="stat-num" id="sn-i">—</div><div class="stat-lbl">Info</div></div>
+      </div>
+      <div class="findings" id="findings">
+        <div class="empty-state">
+          <div class="empty-icon"></div>
+          <div class="empty-text">No scan results yet</div>
+          <div style="font-size:.72rem;color:var(--text-3);margin-top:2px">Paste code or upload a file to begin</div>
+        </div>
+      </div>
+      <div class="log-bar" id="lb"><div class="log-dot"></div><span id="lm">Ready</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ CI/CD ═════════════════════════ -->
+<section id="cicd">
+  <div class="section-eyebrow">Pipeline Integration</div>
+  <h2 class="section-title">CI/CD Setup</h2>
+  <p class="section-sub">Block secrets from reaching production. SecretScan returns exit code 1 on CRITICAL or HIGH findings — your pipeline fails automatically.</p>
+
+  <div class="cicd-layout">
+    <!-- Steps -->
+    <div>
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num-wrap"><div class="step-num">1</div><div class="step-line"></div></div>
+          <div class="step-body">
+            <div class="step-title">Add SecretScan to your repo</div>
+            <div class="step-desc">Copy the <code>secret-api-key-detector/</code> folder into your project root. Install dependencies with <code>pip install -r requirements.txt</code>.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-wrap"><div class="step-num">2</div><div class="step-line"></div></div>
+          <div class="step-body">
+            <div class="step-title">Choose your platform</div>
+            <div class="step-desc">Select GitHub Actions, GitLab CI, Jenkins, or Bitbucket from the templates on the right. Copy the YAML into your repo.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-wrap"><div class="step-num">3</div><div class="step-line"></div></div>
+          <div class="step-body">
+            <div class="step-title">Commit the workflow file</div>
+            <div class="step-desc">Push to your repo. The scan runs on every push and pull request. Merges are blocked when secrets are found.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-wrap"><div class="step-num">4</div><div class="step-line"></div></div>
+          <div class="step-body">
+            <div class="step-title">Review JSON artifacts</div>
+            <div class="step-desc">Reports are saved as pipeline artifacts with timestamps. Download from your CI dashboard or pipe into a SIEM tool.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num-wrap"><div class="step-num">5</div></div>
+          <div class="step-body">
+            <div class="step-title">Add a pre-commit hook</div>
+            <div class="step-desc">Run <code>python cli.py scan .</code> before every commit to catch leaks at the developer workstation — before they're ever pushed.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Templates + best practices -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="scan-card">
+        <div class="scan-card-head"><span class="scan-card-title">Workflow Template</span></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div class="ptabs">
+            <button class="ptab active" onclick="sp('gh',this)">GitHub</button>
+            <button class="ptab" onclick="sp('gl',this)">GitLab</button>
+            <button class="ptab" onclick="sp('jk',this)">Jenkins</button>
+            <button class="ptab" onclick="sp('bb',this)">Bitbucket</button>
+          </div>
+          <div id="wf-gh">
+<pre class="wf"><span class="c"># .github/workflows/secret-scan.yml</span>
+<span class="k">name</span>: <span class="v">Secret Detection</span>
+<span class="k">on</span>:
+  <span class="k">push</span>: { <span class="k">branches</span>: <span class="v">[main, develop]</span> }
+  <span class="k">pull_request</span>: { <span class="k">branches</span>: <span class="v">[main]</span> }
+<span class="k">jobs</span>:
+  <span class="k">scan</span>:
+    <span class="k">runs-on</span>: <span class="v">ubuntu-latest</span>
+    <span class="k">steps</span>:
+      - <span class="k">uses</span>: <span class="v">actions/checkout@v4</span>
+      - <span class="k">uses</span>: <span class="v">actions/setup-python@v5</span>
+        <span class="k">with</span>: { <span class="k">python-version</span>: <span class="v">'3.11'</span> }
+      - <span class="k">run</span>: <span class="v">pip install -r requirements.txt</span>
+      - <span class="k">run</span>: |
+          python cli.py scan . \
+            --format json \
+            --output scan.json
+      - <span class="k">uses</span>: <span class="v">actions/upload-artifact@v4</span>
+        <span class="k">if</span>: <span class="v">always()</span>
+        <span class="k">with</span>:
+          <span class="k">name</span>: <span class="v">scan-report</span>
+          <span class="k">path</span>: <span class="v">scan.json</span></pre>
+          </div>
+          <div id="wf-gl" style="display:none">
+<pre class="wf"><span class="c"># .gitlab-ci.yml</span>
+<span class="k">secret-scan</span>:
+  <span class="k">stage</span>: <span class="v">test</span>
+  <span class="k">image</span>: <span class="v">python:3.11-slim</span>
+  <span class="k">script</span>:
+    - <span class="v">pip install -r requirements.txt</span>
+    - <span class="v">python cli.py scan . --format json</span>
+  <span class="k">artifacts</span>:
+    <span class="k">when</span>: <span class="v">always</span>
+    <span class="k">paths</span>: [<span class="v">output/reports/*.json</span>]
+    <span class="k">expire_in</span>: <span class="v">30 days</span>
+  <span class="k">only</span>: [<span class="v">main</span>, <span class="v">merge_requests</span>]</pre>
+          </div>
+          <div id="wf-jk" style="display:none">
+<pre class="wf"><span class="c">// Jenkinsfile</span>
+<span class="kw">pipeline</span> {
+  <span class="kw">agent any</span>
+  <span class="kw">stages</span> {
+    <span class="kw">stage</span>(<span class="v">'Secret Scan'</span>) {
+      <span class="kw">steps</span> {
+        <span class="kw">sh</span> <span class="v">'''
+          pip install -r requirements.txt
+          python cli.py scan . \
+            --format json
+        '''</span>
+      }
+    }
+  }
+}</pre>
+          </div>
+          <div id="wf-bb" style="display:none">
+<pre class="wf"><span class="c"># bitbucket-pipelines.yml</span>
+<span class="k">pipelines</span>:
+  <span class="k">default</span>:
+    - <span class="k">step</span>:
+        <span class="k">name</span>: <span class="v">Secret Detection</span>
+        <span class="k">image</span>: <span class="v">python:3.11-slim</span>
+        <span class="k">script</span>:
+          - <span class="v">pip install -r requirements.txt</span>
+          - <span class="v">python cli.py scan . --format json</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config tester + best practices -->
+  <div class="config-tester">
+    <h3>Test a Config Before Committing</h3>
+    <p>Paste a <code style="font-family:var(--f-mono);font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:3px">.env</code> or CI config below and scan it instantly.</p>
+    <div class="config-tester-grid">
+      <textarea class="code-ed" id="cicd-in" style="height:130px" placeholder="DATABASE_URL=postgres://user:mypassword@host:5432/db&#10;STRIPE_KEY=sk_live_abc123...&#10;GITHUB_TOKEN=ghp_abc..."></textarea>
+      <button class="scan-btn-full" style="width:140px;height:130px;flex-direction:column;gap:8px;border-radius:var(--r-lg)" onclick="cicdScan()">
+        <div class="spinner"></div>
+        <span class="btn-text" style="font-size:.75rem">Scan Config</span>
+      </button>
+    </div>
+    <div class="config-result" id="cicd-res"></div>
+  </div>
+
+  <div class="bp-grid" style="margin-top:28px">
+    <div class="bp-card"><strong>Never commit .env files</strong>Add <code style="font-family:var(--f-mono);font-size:.85em">.env</code> to .gitignore. Ship a <code style="font-family:var(--f-mono);font-size:.85em">.env.example</code> with placeholder values.</div>
+    <div class="bp-card"><strong>Use a secrets manager</strong>AWS Secrets Manager, HashiCorp Vault, or GitHub Secrets. Never pass keys as plaintext environment variables in CI logs.</div>
+    <div class="bp-card"><strong>Rotate immediately on exposure</strong>If a secret was ever committed — even briefly — assume it is compromised. Revoke and regenerate before doing anything else.</div>
+    <div class="bp-card"><strong>Audit git history</strong>Secrets removed in a later commit are still in history. Use <code style="font-family:var(--f-mono);font-size:.85em">git log -p</code> or truffleHog to scan historical commits.</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ CHATBOT ═══════════════════════ -->
+<section id="chatbot">
+  <div class="section-eyebrow">AI Assistant</div>
+  <h2 class="section-title">SecretBot</h2>
+  <p class="section-sub">Ask about scan results, CI/CD setup, remediation steps, or anything DevSecOps. Add an OpenAI key for full GPT-powered answers.</p>
+
+  <div class="chat-layout">
+    <div class="chat-window">
+      <div class="chat-topbar">
+        <div class="chat-av"></div>
+        <div>
+          <div class="chat-bot-name">SecretBot</div>
+          <div class="chat-bot-sub">DevSecOps assistant</div>
+        </div>
+        <div class="chat-model" id="m-badge">Built-in FAQ</div>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="ci" placeholder="Ask about secrets, CI/CD, entropy, remediation..." onkeydown="ck(event)" rows="1"></textarea>
+          <button class="chat-send" id="csb" onclick="send()"></button>
+        </div>
+        <div class="quick-prompts">
+          <button class="qp" onclick="qp('How do I set up GitHub Actions?')">GitHub Actions</button>
+          <button class="qp" onclick="qp('What does CRITICAL severity mean?')">CRITICAL severity</button>
+          <button class="qp" onclick="qp('How does entropy analysis work?')">Entropy explained</button>
+          <button class="qp" onclick="qp('I found an exposed AWS key. What now?')">AWS key exposed</button>
+          <button class="qp" onclick="qp('How do I reduce false positives?')">False positives</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-sidebar">
+      <div class="chat-sidebar-card">
+        <div class="cs-label">OpenAI API Key</div>
+        <div class="ak-wrap">
+          <input type="password" class="ak-inp" id="ak" placeholder="sk-..." oninput="akUpd()"/>
+          <button class="ak-eye" onclick="akTog()" aria-label="Toggle visibility"></button>
+        </div>
+        <div class="ak-status" id="ak-st">No key — using built-in FAQ</div>
+        <div class="ak-note">Without a key, SecretBot answers from a built-in knowledge base covering common DevSecOps questions. Add an OpenAI key to unlock full GPT answers.</div>
+      </div>
+      <div class="chat-sidebar-card">
+        <div class="cs-label">Quick Questions</div>
+        <div class="faq-list">
+          <div class="faq-i" onclick="qp('What types of secrets can SecretScan detect?')">What secrets are detected?</div>
+          <div class="faq-i" onclick="qp('How do I scan a whole project directory?')">Scan a whole project?</div>
+          <div class="faq-i" onclick="qp('What should I do if a CRITICAL secret is found?')">Found CRITICAL — now what?</div>
+          <div class="faq-i" onclick="qp('How do I export results as JSON?')">Export as JSON?</div>
+          <div class="faq-i" onclick="qp('How do I add a pre-commit hook for SecretScan?')">Pre-commit hook?</div>
+          <div class="faq-i" onclick="qp('Can I scan a zip file?')">Scan a zip file?</div>
+        </div>
+      </div>
+      <button class="btn-ghost" style="width:100%;font-size:.75rem;padding:8px;justify-content:center" onclick="clrChat()">Clear Chat</button>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════════════ ABOUT ═════════════════════════ -->
+<section id="about">
+  <div class="about-hero-grid">
+    <div>
+      <div class="section-eyebrow">About the Tool</div>
+      <h2 class="section-title">Built for<br>Security Engineers</h2>
+      <p class="section-sub">SecretScan is a production-grade DevSecOps tool that combines regex-based pattern detection with Shannon entropy analysis to catch hardcoded secrets — whether they match a known pattern or not.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px">
+        <span style="font-family:var(--f-mono);font-size:.68rem;padding:4px 10px;border:1px solid var(--border-2);border-radius:3px;color:var(--text-2)">Python 3.9+</span>
+        <span style="font-family:var(--f-mono);font-size:.68rem;padding:4px 10px;border:1px solid var(--border-2);border-radius:3px;color:var(--text-2)">Flask 3.0</span>
+        <span style="font-family:var(--f-mono);font-size:.68rem;padding:4px 10px;border:1px solid var(--border-2);border-radius:3px;color:var(--text-2)">30+ patterns</span>
+        <span style="font-family:var(--f-mono);font-size:.68rem;padding:4px 10px;border:1px solid rgba(42,157,110,.4);border-radius:3px;color:var(--green)">Entropy analysis</span>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px">
+      <div class="section-eyebrow" style="margin-bottom:20px">Architecture</div>
+      <div style="font-family:var(--f-mono);font-size:.72rem;color:var(--text-2);line-height:2">
+        <div style="color:var(--text-3)">secret-api-key-detector/</div>
+        <div style="padding-left:16px">cli.py <span style="color:var(--text-3)">— CLI entry point</span></div>
+        <div style="padding-left:16px">app.py <span style="color:var(--text-3)">— Flask web UI</span></div>
+        <div style="padding-left:16px;color:var(--red)">config/ <span style="color:var(--text-3)">patterns, settings</span></div>
+        <div style="padding-left:16px;color:var(--red)">src/scanner/ <span style="color:var(--text-3)">core engine</span></div>
+        <div style="padding-left:32px">file_scanner.py</div>
+        <div style="padding-left:32px">directory_scanner.py</div>
+        <div style="padding-left:32px">entropy_checker.py</div>
+        <div style="padding-left:16px;color:var(--red)">src/detectors/ <span style="color:var(--text-3)">patterns</span></div>
+        <div style="padding-left:32px">api_key_detector.py</div>
+        <div style="padding-left:32px">token_detector.py</div>
+        <div style="padding-left:32px">secret_detector.py</div>
+        <div style="padding-left:16px;color:var(--red)">src/report/ <span style="color:var(--text-3)">output</span></div>
+        <div style="padding-left:16px">tests/ <span style="color:var(--text-3)">pytest suite</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-cards">
+    <div class="ac">
+      <div class="ac-icon-wrap"><div class="aci-entropy" style="width:100%;height:100%"></div></div>
+      <div class="ac-title">Shannon Entropy</div>
+      <div class="ac-desc">Detects secrets outside known patterns by computing H = −Σ p(x)log₂(p(x)). Base64 and hex strings above threshold 4.5 are flagged as high-entropy candidates regardless of their content.</div>
+    </div>
+    <div class="ac">
+      <div class="ac-icon-wrap"><div class="aci-modular" style="width:100%;height:100%"></div></div>
+      <div class="ac-title">Modular Detectors</div>
+      <div class="ac-desc">Three single-responsibility detector classes — API keys, auth tokens, and generic secrets — each extending BaseDetector. Clean SOLID architecture makes adding new patterns a one-file change.</div>
+    </div>
+    <div class="ac">
+      <div class="ac-icon-wrap"><div class="aci-shield" style="width:100%;height:100%"></div></div>
+      <div class="ac-title">Exit Code Gate</div>
+      <div class="ac-desc">Returns exit code 1 on CRITICAL or HIGH findings, making it a drop-in CI/CD quality gate. JSON reports integrate with SIEM tools, Splunk, Grafana, and custom alerting pipelines.</div>
+    </div>
+  </div>
+
+  <div class="patterns-card">
+    <div class="patterns-card-head">
+      <span class="scan-card-title">Supported Secret Types</span>
+      <span style="font-family:var(--f-mono);font-size:.66rem;color:var(--text-3)">30+ patterns</span>
+    </div>
+    <table class="pt-table">
+      <thead><tr><th>Secret Type</th><th>Detection Pattern</th><th>Severity</th></tr></thead>
+      <tbody>
+        <tr><td>AWS Access Key ID</td><td>AKIA[0-9A-Z]{16}</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>OpenAI API Key</td><td>sk-[a-zA-Z0-9]{48}</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>GitHub Personal Access Token</td><td>ghp_[a-zA-Z0-9]{36}</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>Stripe Live Secret Key</td><td>sk_live_[0-9a-zA-Z]{24+}</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>PostgreSQL Connection String</td><td>postgres://user:pass@host</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>MongoDB Connection String</td><td>mongodb://user:pass@host</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>RSA / EC Private Key</td><td>-----BEGIN PRIVATE KEY</td><td><span class="pt-sev ptC">CRITICAL</span></td></tr>
+        <tr><td>Google API Key</td><td>AIza[0-9A-Za-z-_]{35}</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>Slack Bot Token</td><td>xoxb-[0-9]+-...</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>JWT Token</td><td>eyJ[...].eyJ[...].signature</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>Hardcoded Password</td><td>password = "..."</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>SendGrid API Key</td><td>SG.[22chars].[43chars]</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>Discord Bot Token</td><td>[MN][24chars].[6].[27]</td><td><span class="pt-sev ptH">HIGH</span></td></tr>
+        <tr><td>Stripe Test Secret Key</td><td>sk_test_[0-9a-zA-Z]{24+}</td><td><span class="pt-sev ptM">MEDIUM</span></td></tr>
+        <tr><td>Stripe Publishable Key</td><td>pk_live_[...] / pk_test_[...]</td><td><span class="pt-sev ptL">LOW</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ════════════════════════ -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="fb-name">
+        SecretScan
+      </div>
+      <p>A production-grade DevSecOps tool for detecting hardcoded secrets, API keys, and high-entropy strings in source code. Built for security engineers and developers who ship fast without cutting corners.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Navigation</h4>
+      <ul>
+        <li><a href="#hero">Home</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#scanner">Scanner</a></li>
+        <li><a href="#cicd">CI/CD Setup</a></li>
+        <li><a href="#chatbot">SecretBot</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>CLI Usage</h4>
+      <ul>
+        <li><a href="#scanner">python cli.py scan .</a></li>
+        <li><a href="#scanner">python cli.py scan ./src</a></li>
+        <li><a href="#scanner">--format json</a></li>
+        <li><a href="#scanner">--severity HIGH</a></li>
+        <li><a href="#scanner">--no-entropy</a></li>
+        <li><a href="#scanner">python app.py</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">SecretScan v1.0.0 — DevSecOps Toolkit &nbsp;·&nbsp; Built by <span style="color:var(--text-2);font-weight:500">Vibhasha Nagvekar</span></div>
+    <div class="footer-tech">
+      <span class="ft-chip">Python</span>
+      <span class="ft-chip">Flask</span>
+      <span class="ft-chip">Regex</span>
+      <span class="ft-chip">Shannon Entropy</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ FLOATING STICKY NOTE ═══════════════════════ -->
+<!-- Theme selector + FAB trigger -->
+<div id="sticky-fab">
+  <div class="sticky-theme-row">
+    <div class="sn-theme-dot active" data-theme="yellow" onclick="setStickyTheme('yellow',this)" title="Yellow"></div>
+    <div class="sn-theme-dot" data-theme="blue"   onclick="setStickyTheme('blue',this)"   title="Blue"></div>
+    <div class="sn-theme-dot" data-theme="green"  onclick="setStickyTheme('green',this)"  title="Green"></div>
+    <div class="sn-theme-dot" data-theme="pink"   onclick="setStickyTheme('pink',this)"   title="Pink"></div>
+    <div class="sn-theme-dot" data-theme="orange" onclick="setStickyTheme('orange',this)" title="Orange"></div>
+  </div>
+  <button class="sticky-fab-btn" onclick="toggleStickyPanel()" title="Security Summary">
+    <div class="fab-icon"></div>
+    <div class="fab-badge" id="fab-badge">0</div>
+  </button>
+</div>
+
+<!-- Sticky panel overlay -->
+<div id="sticky-panel" data-theme="yellow">
+  <div class="sn-header">
+    <span class="sn-header-title">Secrets Found in Your Code</span>
+    <button class="sn-close" onclick="toggleStickyPanel()">&#x2715;</button>
+  </div>
+  <div class="sn-body" id="sn-body"></div>
+  <div class="sn-footer" id="sn-footer"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── NAV SCROLL ───────────────────────────────────
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>40);
+  // highlight active nav link
+  const sections=['hero','how','scanner','cicd','chatbot','about'];
+  let cur='hero';
+  sections.forEach(id=>{const el=document.getElementById(id);if(el&&window.scrollY>=el.offsetTop-100)cur=id;});
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    a.classList.toggle('active',a.getAttribute('href')==='#'+cur);
+  });
+});
+
+// ── HAMBURGER ────────────────────────────────────
+function toggleMenu(){
+  const hb=document.getElementById('hamburger');
+  const mm=document.getElementById('mobile-menu');
+  hb.classList.toggle('open');
+  mm.classList.toggle('open');
+  document.body.style.overflow=mm.classList.contains('open')?'hidden':'';
+}
+function closeMenu(){
+  document.getElementById('hamburger').classList.remove('open');
+  document.getElementById('mobile-menu').classList.remove('open');
+  document.body.style.overflow='';
+}
+function scrollTo(sel){
+  const el=document.querySelector(sel);
+  if(el)el.scrollIntoView({behavior:'smooth'});
+}
+
+// ── SCANNER ──────────────────────────────────────
+let entOn=true,selFile=null;
+function toggleEnt(){entOn=!entOn;document.getElementById('ent-tgl').classList.toggle('on',entOn);}
+function stab(t){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='code')||(i===1&&t==='file')));
+  document.getElementById('tp-code').classList.toggle('active',t==='code');
+  document.getElementById('tp-file').classList.toggle('active',t==='file');
+}
+function fsel(e){selFile=e.target.files[0];if(selFile)document.getElementById('un').textContent=selFile.name;}
+function dov(e){e.preventDefault();document.getElementById('uz').classList.add('drag-over');}
+function dlv(){document.getElementById('uz').classList.remove('drag-over');}
+function ddr(e){e.preventDefault();dlv();selFile=e.dataTransfer.files[0];if(selFile)document.getElementById('un').textContent=selFile.name;}
+
+async function doScan(){
+  const code=document.getElementById('code-in').value.trim();
+  if(!code){toast('Paste some code first.');return;}
+  const fn=document.getElementById('fn-in').value||'snippet.py';
+  setScan(true,'scan-btn');setLog('Scanning...',true);
+  try{const r=await fetch('/api/scan/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,filename:fn})});if(!r.ok)throw new Error(await r.text());render(await r.json());setLog('Scan complete.',false);}
+  catch(e){toast('Error: '+e.message);setLog('Error.',false);}
+  finally{setScan(false,'scan-btn');}
+}
+async function doFileScan(){
+  if(!selFile){toast('Select a file first.');return;}
+  setLog('Scanning '+selFile.name+'...',true);
+  const fd=new FormData();fd.append('file',selFile);
+  try{const r=await fetch('/api/scan/file',{method:'POST',body:fd});if(!r.ok)throw new Error(await r.text());render(await r.json());setLog('Scan complete.',false);}
+  catch(e){toast('Error: '+e.message);setLog('Error.',false);}
+}
+async function cicdScan(){
+  const code=document.getElementById('cicd-in').value.trim();
+  if(!code){toast('Paste a config first.');return;}
+  const res=document.getElementById('cicd-res');
+  res.textContent='Scanning...';res.className='config-result visible';
+  try{
+    const r=await fetch('/api/scan/text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,filename:'config.env'})});
+    const rp=await r.json();const n=rp.meta.total_findings,c=rp.summary.CRITICAL||0,h=rp.summary.HIGH||0;
+    if(n===0){res.textContent='No secrets detected in this config.';res.className='config-result visible clean';}
+    else{res.textContent=n+' finding(s) detected — '+c+' CRITICAL, '+h+' HIGH. See Scanner section for full report.';res.className='config-result visible found';render(rp);}
+  }catch(e){res.textContent='Error: '+e.message;}
+}
+
+function render(report){
+  const s=report.summary||{},f=report.findings||[];
+  const map={c:'CRITICAL',h:'HIGH',m:'MEDIUM',l:'LOW',i:'INFO'};
+  Object.entries(map).forEach(([k,v])=>{const ct=s[v]||0;document.getElementById('sn-'+k).textContent=ct||'0';document.getElementById('sc-'+k).className='stat-box'+(ct>0?' lit-'+k:'');});
+  document.getElementById('rm').textContent=f.length+' finding(s) — '+(report.stats?.scanned_files||1)+' file(s)';
+  const list=document.getElementById('findings');list.innerHTML='';
+  if(!f.length){list.innerHTML='<div class="clean-state"><div class="clean-icon"></div><div class="clean-title" style="margin-top:12px">No Secrets Found</div><div class="clean-sub">Your code looks clean.</div></div>';return;}
+  const so={CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3,INFO:4};
+  f.sort((a,b)=>(so[a.severity]||4)-(so[b.severity]||4));
+  f.forEach((x,i)=>{
+    const el=document.createElement('div');el.className='finding';
+    const sc={CRITICAL:'sC',HIGH:'sH',MEDIUM:'sM',LOW:'sL'}[x.severity]||'sL';
+    const mr=x.matched?`<div class="meta-row"><span class="mk">matched</span><span class="mv">${esc(x.matched)}</span></div>`:'';
+    const cr=x.line_content?`<div class="meta-row"><span class="mk">context</span><span class="mv cx">${esc(x.line_content.substring(0,120))}</span></div>`:'';
+    const er=x.entropy?`<div class="meta-row"><span class="mk">entropy</span><span class="mv" style="color:var(--amber)">${x.entropy.toFixed(4)}</span></div>`:'';
+    el.innerHTML=`<div class="finding-top"><span class="sev-tag ${sc}">${x.severity}</span><span class="finding-desc">${esc(x.description||x.type)}</span><span class="finding-ln">L${x.line||'?'}</span></div><div class="finding-meta"><div class="meta-row"><span class="mk">type</span><span class="mv" style="color:var(--green)">${esc(x.type||'—')}</span></div>${mr}${cr}${er}</div>`;
+    list.appendChild(el);
+  });
+  // Scroll to scanner results
+  document.getElementById('scanner').scrollIntoView({behavior:'smooth',block:'start'});
+  // Render sticky note
+  renderStickyNote(f);
+}
+
+function clrRes(){
+  document.getElementById('findings').innerHTML='<div class="empty-state"><div class="empty-icon"></div><div class="empty-text">No scan results yet</div></div>';
+  ['c','h','m','l','i'].forEach(k=>{document.getElementById('sn-'+k).textContent='—';document.getElementById('sc-'+k).className='stat-box';});
+  document.getElementById('rm').textContent='Awaiting scan';
+  document.getElementById('sticky-fab').classList.remove('visible');
+  document.getElementById('sticky-panel').classList.remove('open');
+  stickyOpen=false;
+  setLog('Ready',false);
+}
+function setScan(on,btnId){
+  const b=document.getElementById(btnId);
+  if(!b)return;b.disabled=on;
+  b.classList.toggle('loading',on);
+  const pi=document.getElementById('pi');
+  if(on){pi.classList.add('running');pi.style.width='';}
+  else{pi.classList.remove('running');pi.style.width='100%';setTimeout(()=>pi.style.width='0',1300);}
+}
+function setLog(m,r){document.getElementById('lm').textContent=m;document.getElementById('lb').classList.toggle('active',r);}
+
+// ── STICKY NOTE FLOATING PANEL ───────────────────
+let stickyOpen=false;
+let currentTheme='yellow';
+
+function toggleStickyPanel(){
+  stickyOpen=!stickyOpen;
+  document.getElementById('sticky-panel').classList.toggle('open',stickyOpen);
+  // Sync fab button bg to theme
+  document.querySelector('.sticky-fab-btn').style.setProperty('--sn-bg',getThemeColor(currentTheme));
+}
+
+function setStickyTheme(theme,el){
+  currentTheme=theme;
+  document.getElementById('sticky-panel').setAttribute('data-theme',theme);
+  document.querySelectorAll('.sn-theme-dot').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('.sticky-fab-btn').style.background=getThemeColor(theme);
+}
+
+function getThemeColor(t){
+  return{yellow:'#f5e642',blue:'#a8d8f0',green:'#a8e6c0',pink:'#f0a8c8',orange:'#f0c878'}[t]||'#f5e642';
+}
+
+function renderStickyNote(findings){
+  const fab=document.getElementById('sticky-fab');
+  const body=document.getElementById('sn-body');
+  const footer=document.getElementById('sn-footer');
+  const badge=document.getElementById('fab-badge');
+
+  const important=findings.filter(f=>f.severity==='CRITICAL'||f.severity==='HIGH');
+
+  if(!important.length){
+    fab.classList.remove('visible');
+    stickyOpen=false;
+    document.getElementById('sticky-panel').classList.remove('open');
+    return;
+  }
+
+  // Show FAB
+  fab.classList.add('visible');
+  document.querySelector('.sticky-fab-btn').style.background=getThemeColor(currentTheme);
+
+  const crit=important.filter(f=>f.severity==='CRITICAL').length;
+  const high=important.filter(f=>f.severity==='HIGH').length;
+  badge.textContent=important.length;
+
+  // Build body
+  body.innerHTML='';
+
+  // Dedupe by description
+  const seen=new Set();
+  const items=important.filter(f=>{
+    const k=f.description+f.line;
+    if(seen.has(k))return false;
+    seen.add(k);return true;
+  }).slice(0,12);
+
+  items.forEach(f=>{
+    const isCrit=f.severity==='CRITICAL';
+    const el=document.createElement('div');
+    el.className='sn-item';
+    const matched=f.matched||'[masked]';
+    el.innerHTML=`
+      <div class="sn-circle ${isCrit?'crit':'high'}">
+        <span class="sn-circle-label">${isCrit?'!':'!'}</span>
+      </div>
+      <div class="sn-text">
+        <div class="sn-name">${escHTML(f.description||f.type)}</div>
+        <div class="sn-detail">Line&nbsp;${f.line||'?'}&nbsp;·&nbsp;${escHTML(matched)}</div>
+        <div class="sn-action">${isCrit?'ROTATE IMMEDIATELY — assume compromised':'Review and rotate if production'}</div>
+      </div>`;
+    body.appendChild(el);
+  });
+
+  const extra=important.length-items.length;
+  footer.textContent=`${crit} critical · ${high} high${extra>0?' · +'+extra+' more':''} · Click icon bottom-right to toggle`;
+
+  // Auto-open panel after scan
+  stickyOpen=true;
+  document.getElementById('sticky-panel').classList.add('open');
+}
+
+function escHTML(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+
+function sp(id,btn){
+  ['gh','gl','jk','bb'].forEach(p=>document.getElementById('wf-'+p).style.display=p===id?'block':'none');
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── CHAT ─────────────────────────────────────────
+let hist=[],busy=false;
+function initChat(){
+  addBot("Hi. I'm SecretBot.\n\nI can help you with scan results, CI/CD integration, remediating exposed secrets, entropy analysis, and general DevSecOps questions.\n\nAsk me anything, or pick a quick question below.");
+}
+function addBot(t){const m=document.getElementById('chat-msgs');const el=document.createElement('div');el.className='msg b';el.innerHTML=`<div class="msg-av"></div><div class="msg-bubble">${md(t)}</div>`;m.appendChild(el);m.scrollTop=m.scrollHeight;}
+function addUser(t){const m=document.getElementById('chat-msgs');const el=document.createElement('div');el.className='msg u';el.innerHTML=`<div class="msg-av"></div><div class="msg-bubble">${esc(t)}</div>`;m.appendChild(el);m.scrollTop=m.scrollHeight;}
+function showTyping(){const m=document.getElementById('chat-msgs');const el=document.createElement('div');el.className='msg b';el.id='tind';el.innerHTML=`<div class="msg-av"></div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;m.appendChild(el);m.scrollTop=m.scrollHeight;}
+function rmTyping(){const e=document.getElementById('tind');if(e)e.remove();}
+async function send(){
+  if(busy)return;const ci=document.getElementById('ci');const msg=ci.value.trim();if(!msg)return;
+  ci.value='';ci.style.height='40px';addUser(msg);hist.push({role:'user',content:msg});
+  busy=true;document.getElementById('csb').disabled=true;showTyping();
+  const ak=document.getElementById('ak').value.trim();
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,api_key:ak,history:hist.slice(-8)})});
+    const d=await r.json();rmTyping();
+    const rep=d.reply||'Sorry, something went wrong.';
+    addBot(rep);hist.push({role:'assistant',content:rep});
+    document.getElementById('m-badge').textContent=d.source==='openai'?'GPT-3.5':'Built-in FAQ';
+  }catch(e){rmTyping();addBot('Sorry, I ran into an error. Please try again.');}
+  busy=false;document.getElementById('csb').disabled=false;
+}
+function qp(t){document.getElementById('ci').value=t;document.getElementById('chatbot').scrollIntoView({behavior:'smooth'});setTimeout(send,400);}
+function ck(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function clrChat(){hist=[];document.getElementById('chat-msgs').innerHTML='';initChat();}
+function akUpd(){
+  const k=document.getElementById('ak').value.trim();const el=document.getElementById('ak-st');
+  if(k.startsWith('sk-')&&k.length>20){el.textContent='OpenAI key active — GPT mode enabled';el.className='ak-status ok';document.getElementById('m-badge').textContent='GPT-3.5';}
+  else if(k.length>0){el.textContent='Key format looks incorrect (should start sk-)';el.className='ak-status';}
+  else{el.textContent='No key — using built-in FAQ';el.className='ak-status';document.getElementById('m-badge').textContent='Built-in FAQ';}
+}
+function akTog(){const i=document.getElementById('ak');i.type=i.type==='password'?'text':'password';}
+
+// ── MARKDOWN ─────────────────────────────────────
+function md(t){
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```([\s\S]*?)```/g,'<pre>$1</pre>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(()=>t.className='toast',3000);}
+
+// ── INIT ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  initChat();
+  const ci=document.getElementById('ci');
+  ci.addEventListener('input',()=>{ci.style.height='40px';ci.style.height=Math.min(ci.scrollHeight,100)+'px';});
+
+  // ── Hero animated code panel ──────────────────
+  const lines=[
+    {sev:'CRITICAL',sc:'sev-c',ct:'AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"'},
+    {sev:'CRITICAL',sc:'sev-c',ct:'stripe.api_key = "sk_live_4eC39HqLyjWDarj..."'},
+    {sev:'HIGH    ',sc:'sev-h',ct:'GITHUB_TOKEN = "ghp_16C7e42F292c691..."'},
+    {sev:'CRITICAL',sc:'sev-c',ct:'DB_URL = "postgres://admin:p@ssw0rd@..."'},
+    {sev:'CLEAN   ',sc:'sev-g',ct:'# 4 findings — rotate credentials now'},
+    {sev:'        ',sc:'sev-i',ct:'entropy: 5.2144 (base64, L:32)'},
+    {sev:'        ',sc:'sev-i',ct:'entropy: 4.8821 (hex, L:40)'},
+    {sev:'HIGH    ',sc:'sev-h',ct:'JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6...'},
+    {sev:'SCAN    ',sc:'sev-g',ct:'files_scanned: 142 | skipped: 18'},
+    {sev:'CRITICAL',sc:'sev-c',ct:'OPENAI_KEY = "sk-proj-aBcDeFgHiJk..."'},
+    {sev:'HIGH    ',sc:'sev-h',ct:'SLACK_TOKEN = "xoxb-17653285-885..."'},
+    {sev:'CRITICAL',sc:'sev-c',ct:'MONGO_URI = "mongodb://admin:pass@..."'},
+    {sev:'CLEAN   ',sc:'sev-g',ct:'# scanner: 3 files clean'},
+    {sev:'HIGH    ',sc:'sev-h',ct:'SENDGRID_KEY = "SG.aBcDeFgHiJkLm..."'},
+    {sev:'        ',sc:'sev-i',ct:'entropy: 5.0012 (base64, L:44)'},
+    {sev:'CRITICAL',sc:'sev-c',ct:'DISCORD_TOKEN = "MTIzNDU2Nzg5MA..."'},
+    {sev:'SCAN    ',sc:'sev-g',ct:'patterns_checked: 30+ | time: 0.3s'},
+  ];
+
+  function buildLine(l){
+    const d=document.createElement('div');d.className='code-line';
+    d.innerHTML=`<span class="sev ${l.sc}">${l.sev}</span><span class="ct">${l.ct}</span>`;
+    return d;
+  }
+
+  const wrap=document.getElementById('hero-code-scroll');
+  if(wrap){
+    // Build double set for seamless loop
+    [...lines,...lines].forEach(l=>wrap.appendChild(buildLine(l)));
+  }
+});
+</script>
+</body>
+</html>

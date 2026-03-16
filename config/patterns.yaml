@@ -1,0 +1,169 @@
+patterns:
+  # AWS
+  aws_access_key:
+    pattern: '(?i)(AKIA[0-9A-Z]{16})'
+    severity: CRITICAL
+    description: "AWS Access Key ID"
+
+  aws_secret_key:
+    pattern: '(?i)(aws_secret_access_key|aws_secret_key)\s*[=:]\s*["\']?([A-Za-z0-9/+=]{40})["\']?'
+    severity: CRITICAL
+    description: "AWS Secret Access Key"
+
+  # GitHub
+  github_token:
+    pattern: '(ghp_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9_]{82})'
+    severity: CRITICAL
+    description: "GitHub Personal Access Token"
+
+  github_oauth:
+    pattern: 'gho_[a-zA-Z0-9]{36}'
+    severity: HIGH
+    description: "GitHub OAuth Token"
+
+  # Google
+  google_api_key:
+    pattern: 'AIza[0-9A-Za-z\-_]{35}'
+    severity: HIGH
+    description: "Google API Key"
+
+  google_oauth:
+    pattern: '[0-9]+-[0-9A-Za-z_]{32}\.apps\.googleusercontent\.com'
+    severity: HIGH
+    description: "Google OAuth Client ID"
+
+  # Stripe
+  stripe_live_key:
+    pattern: 'sk_live_[0-9a-zA-Z]{24,}'
+    severity: CRITICAL
+    description: "Stripe Live Secret Key"
+
+  stripe_test_key:
+    pattern: 'sk_test_[0-9a-zA-Z]{24,}'
+    severity: MEDIUM
+    description: "Stripe Test Secret Key"
+
+  stripe_pub_key:
+    pattern: 'pk_(live|test)_[0-9a-zA-Z]{24,}'
+    severity: LOW
+    description: "Stripe Publishable Key"
+
+  # Slack
+  slack_token:
+    pattern: '(xox[baprs]-([0-9a-zA-Z]{10,48})-([0-9a-zA-Z]{10,48})-([0-9a-zA-Z]{10,48}))'
+    severity: HIGH
+    description: "Slack Token"
+
+  slack_webhook:
+    pattern: 'https://hooks\.slack\.com/services/T[a-zA-Z0-9_]+/B[a-zA-Z0-9_]+/[a-zA-Z0-9_]+'
+    severity: HIGH
+    description: "Slack Webhook URL"
+
+  # Twilio
+  twilio_account_sid:
+    pattern: 'AC[a-zA-Z0-9]{32}'
+    severity: HIGH
+    description: "Twilio Account SID"
+
+  twilio_auth_token:
+    pattern: '(?i)(twilio_auth_token|auth_token)\s*[=:]\s*["\']?([a-f0-9]{32})["\']?'
+    severity: CRITICAL
+    description: "Twilio Auth Token"
+
+  # SendGrid
+  sendgrid_api_key:
+    pattern: 'SG\.[a-zA-Z0-9\-_]{22}\.[a-zA-Z0-9\-_]{43}'
+    severity: HIGH
+    description: "SendGrid API Key"
+
+  # HubSpot
+  hubspot_api_key:
+    pattern: '(?i)(hubspot_api_key|hapikey)\s*[=:]\s*["\']?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})["\']?'
+    severity: HIGH
+    description: "HubSpot API Key"
+
+  # Mailgun
+  mailgun_api_key:
+    pattern: 'key-[0-9a-zA-Z]{32}'
+    severity: HIGH
+    description: "Mailgun API Key"
+
+  # PayPal
+  paypal_braintree:
+    pattern: 'access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}'
+    severity: CRITICAL
+    description: "PayPal/Braintree Access Token"
+
+  # Heroku
+  heroku_api_key:
+    pattern: '[hH]eroku.*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}'
+    severity: HIGH
+    description: "Heroku API Key"
+
+  # Database connection strings
+  mongo_uri:
+    pattern: 'mongodb(\+srv)?://[a-zA-Z0-9_-]+:[^@\s]+@[a-zA-Z0-9._-]+'
+    severity: CRITICAL
+    description: "MongoDB Connection String with credentials"
+
+  postgres_uri:
+    pattern: 'postgres(ql)?://[a-zA-Z0-9_-]+:[^@\s]+@[a-zA-Z0-9._-]+'
+    severity: CRITICAL
+    description: "PostgreSQL Connection String with credentials"
+
+  mysql_uri:
+    pattern: 'mysql://[a-zA-Z0-9_-]+:[^@\s]+@[a-zA-Z0-9._-]+'
+    severity: CRITICAL
+    description: "MySQL Connection String with credentials"
+
+  # JWT
+  jwt_token:
+    pattern: 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
+    severity: HIGH
+    description: "JSON Web Token (JWT)"
+
+  # Private Keys
+  rsa_private_key:
+    pattern: '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+    severity: CRITICAL
+    description: "Private Key"
+
+  # Generic password patterns
+  generic_password:
+    pattern: '(?i)(password|passwd|pwd)\s*[=:]\s*["\']([^"\']{8,})["\']'
+    severity: HIGH
+    description: "Hardcoded Password"
+
+  generic_secret:
+    pattern: '(?i)(secret|api_secret|client_secret)\s*[=:]\s*["\']([^"\']{8,})["\']'
+    severity: HIGH
+    description: "Hardcoded Secret"
+
+  generic_token:
+    pattern: '(?i)(token|auth_token|access_token)\s*[=:]\s*["\']([a-zA-Z0-9_\-\.]{20,})["\']'
+    severity: MEDIUM
+    description: "Hardcoded Token"
+
+  # OpenAI
+  openai_api_key:
+    pattern: 'sk-[a-zA-Z0-9]{48}'
+    severity: CRITICAL
+    description: "OpenAI API Key"
+
+  # Azure
+  azure_storage:
+    pattern: 'DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]+'
+    severity: CRITICAL
+    description: "Azure Storage Connection String"
+
+  # Discord
+  discord_token:
+    pattern: '[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27}'
+    severity: HIGH
+    description: "Discord Bot Token"
+
+  # Telegram
+  telegram_bot_token:
+    pattern: '[0-9]{8,10}:[a-zA-Z0-9_-]{35}'
+    severity: HIGH
+    description: "Telegram Bot Token"

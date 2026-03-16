@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    image: myapp:latest
+    environment:
+      DATABASE_URL: postgresql://appuser:Pr0d_DB_P@ssw0rd@db.prod.internal:5432/appdb
+      REDIS_URL: redis://:RedisStr0ngPass@redis.prod.internal:6379
+      SECRET_KEY: "f3a8b2c1d9e4f7a0b5c8d2e6f1a3b7c4d9e2f5a8b1c4d7e0f3a6b9c2d5"
+      AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+      AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      STRIPE_SECRET_KEY: sk_live_4eC39HqLyjWDarjtT1zdp7dc
+      OPENAI_API_KEY: sk-proj-aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890abcdefghij
+      GITHUB_TOKEN: ghp_16C7e42F292c6912E7710c838347Ae178B4a
+      SENDGRID_API_KEY: SG.aBcDeFgHiJkLmNoPqRsTuV.wXyZaBcDeFgHiJkLmNoPqRsTuVwXyZaBcDe
+      SLACK_BOT_TOKEN: xoxb-17653285-885098418-10d7919b2f516a9b7d0e5d4c3a4b
+      TWILIO_AUTH_TOKEN: a1b2c3d4e5f67890a1b2c3d4e5f67890
+      JWT_SECRET: productionJWTsecret_DoNotExpose_2024
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: Pr0d_DB_P@ssw0rd
+      POSTGRES_USER: appuser
+      POSTGRES_DB: appdb
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass RedisStr0ngPass
