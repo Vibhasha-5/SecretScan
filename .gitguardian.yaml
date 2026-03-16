@@ -1,0 +1,4 @@
+# .gitguardian.yml
+paths-ignore:
+  - samples/
+  - tests/
